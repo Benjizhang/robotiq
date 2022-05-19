@@ -48,7 +48,9 @@
 #include "geometry_msgs/WrenchStamped.h"
 #include "robotiq_ft_sensor/rq_sensor_state.h"
 #include "robotiq_ft_sensor/ft_sensor.h"
+#include "robotiq_ft_sensor/force2d_info.h"
 #include "robotiq_ft_sensor/sensor_accessor.h"
+#include <math.h>
 
 typedef robotiq_ft_sensor::sensor_accessor::Request Request;
 static int max_retries_(100);
@@ -189,6 +191,20 @@ static robotiq_ft_sensor::ft_sensor get_data(void)
 	return msgStream;
 }
 
+static robotiq_ft_sensor::force2d_info get_force2d_info(void)
+{
+	robotiq_ft_sensor::force2d_info force2d;
+	float force_x, force_y;
+
+	force_x = rq_state_get_received_data(0);
+	force_y = rq_state_get_received_data(1);
+	force2d.val = sqrt(pow(force_x,2)+pow(force_y,2));
+	force2d.dir = (atan2(force_y, force_x))/M_PI*180; //deg
+
+
+	return force2d;
+}
+
 int main(int argc, char **argv)
 {
         ros::init(argc, argv, "robotiq_ft_sensor");
@@ -206,6 +222,7 @@ int main(int argc, char **argv)
 
 	INT_8 bufStream[512];
         robotiq_ft_sensor::ft_sensor msgStream;
+		robotiq_ft_sensor::force2d_info forcemsg;
 	INT_8 ret;
 
 	//If we can't initialize, we return an error
@@ -231,6 +248,7 @@ int main(int argc, char **argv)
 
         ros::Publisher sensor_pub = n.advertise<robotiq_ft_sensor::ft_sensor>("robotiq_ft_sensor", 512);
         ros::Publisher wrench_pub = n.advertise<geometry_msgs::WrenchStamped>("robotiq_ft_wrench", 512);
+		ros::Publisher force2d_pub = n.advertise<robotiq_ft_sensor::force2d_info>("robotiq_ft_force2d", 512);
         ros::ServiceServer service = n.advertiseService("robotiq_ft_sensor_acc", receiverCallback);
 
 	//std_msgs::String msg;
@@ -250,10 +268,12 @@ int main(int argc, char **argv)
 		{
 			strcpy(bufStream,"");
 			msgStream = get_data();
+			forcemsg = get_force2d_info();
 
 			if(rq_state_got_new_message())
 			{
 				sensor_pub.publish(msgStream);
+				force2d_pub.publish(forcemsg);
 
 				//compose WrenchStamped Msg
 				wrenchMsg.header.stamp = ros::Time::now();

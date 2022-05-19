@@ -14,6 +14,7 @@ add_message_files(
     msg
   FILES
     ft_sensor.msg
+    force2d_info.msg
 )
 
 ## Generate services in the 'srv' folder
