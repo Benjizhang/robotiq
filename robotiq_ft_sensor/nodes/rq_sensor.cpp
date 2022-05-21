@@ -199,7 +199,7 @@ static robotiq_ft_sensor::force2d_info get_force2d_info(void)
 	force_x = rq_state_get_received_data(0);
 	force_y = rq_state_get_received_data(1);
 	force2d.val = sqrt(pow(force_x,2)+pow(force_y,2));
-	force2d.dir = (atan2(force_y, force_x))/3.1415926*180; //deg
+	force2d.dir = (atan2(force_y, force_x))/3.141592653589793*180; //deg
 
 
 	return force2d;
